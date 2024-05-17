@@ -13,6 +13,12 @@ old_libpaths <- .libPaths()
 second_libpath <- "/Users/rhalenathomas/Library/CustomR"
 .libPaths(c(old_libpaths, second_libpath))
 
+#### if you want to install everything in to your normal library 
+# run 
+second_libpath <- .libPaths()
+
+# then you won't need to change the code below 
+
 # Install Seurat 5 to a separate library location
 install.packages("Seurat", lib = second_libpath)
 install.packages("SeuratObject", lib = second_libpath)
