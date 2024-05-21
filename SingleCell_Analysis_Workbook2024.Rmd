@@ -836,7 +836,7 @@ integrated_seurat <- FindClusters(integrated_seurat, resolution = c(0, 0.05, 0.1
 The above may take long to run. Read in the final object to run the visualizations
 
 ```{r}
-#saveRDS(integrated_seurat, paste(file_path, "intgrated_final_seu.rds", sep = "/"))
+saveRDS(integrated_seurat, paste(file_path, "intgrated_final_seu.rds", sep = "/"))
 
 integrated_seurat <- readRDS(paste(file_path, "intgrated_final_seu.rds", sep = "/"))
 
@@ -1063,7 +1063,8 @@ DotPlot(integrated_seurat, features = oligodendrocyte) + RotatedAxis()
 Neuronal markers
 
 ```{r}
-neurons <- c("RBFOX3","SYP","VAMP1","TUBB3","SYT1","MAP2")
+Idents(integrated_seurat) <- "RNA_snn_res.0.4"
+neurons <- c("RBFOX3","SYP","VAMP1","TUBB3","SYT1","MAP2","BSN")
 DotPlot(integrated_seurat, features = neurons) + RotatedAxis()
 for (i in neurons) {
   print(FeaturePlot(integrated_seurat, features = i, min.cutoff = 'q2', max.cutoff = 'q99', label = TRUE, raster = FALSE))
@@ -1074,10 +1075,9 @@ for (i in neurons) {
 More specific neuronal markers
 
 ```{r}
-ex_neuron
-neurons <- c("RBFOX3","SYP","VAMP1","TUBB3","SYT1","MAP2")
-DotPlot(integrated_seurat, features = neurons) + RotatedAxis()
-for (i in neurons) {
+ex_neurons <- c("GRIA2","GRIA1","GRIA4","GRIN1","GRIN2B","GRIN2A","CAMK2A","DLG4")
+DotPlot(integrated_seurat, features = ex_neurons) + RotatedAxis()
+for (i in ex_neurons) {
   print(FeaturePlot(integrated_seurat, features = i, min.cutoff = 'q2', max.cutoff = 'q99', label = TRUE, raster = FALSE))
 }
 
@@ -1086,8 +1086,7 @@ for (i in neurons) {
 
 
 ```{r}
-gaba <- 
-neurons <- c("RBFOX3","SYP","VAMP1","TUBB3","SYT1","MAP2")
+gaba <- c("GAD2","GAD1","GAT1","PVALB","SLC32A1","GABR2","GABR1","GABRA4")
 DotPlot(integrated_seurat, features = neurons) + RotatedAxis()
 for (i in neurons) {
   print(FeaturePlot(integrated_seurat, features = i, min.cutoff = 'q2', max.cutoff = 'q99', label = TRUE, raster = FALSE))
@@ -1098,13 +1097,37 @@ for (i in neurons) {
 
 ```{r}
 
-da_neurons <- 
-neurons <- c("RBFOX3","SYP","VAMP1","TUBB3","SYT1","MAP2")
+da_neurons <- c("TH","SLC18A2","SLC17A6","OTX2","CALB1","ALDH1A1","SOX6")
 DotPlot(integrated_seurat, features = neurons) + RotatedAxis()
-for (i in neurons) {
+for (i in da_neurons) {
   print(FeaturePlot(integrated_seurat, features = i, min.cutoff = 'q2', max.cutoff = 'q99', label = TRUE, raster = FALSE))
 }
 ```
+
+
+NPC
+
+```{r}
+NPC <- c("DCX","NEUROD1","SOX2","NES","PAX6")
+DotPlot(integrated_seurat, features = NPC) + RotatedAxis()
+for (i in NPC) {
+  print(FeaturePlot(integrated_seurat, features = i, min.cutoff = 'q2', max.cutoff = 'q99', label = TRUE, raster = FALSE))
+}
+
+```
+
+
+DA NPC
+
+```{r}
+daNPC <- c("FOXA2","LMX1A","KCNJ6")
+DotPlot(integrated_seurat, features = daNPC) + RotatedAxis()
+for (i in daNPC) {
+  print(FeaturePlot(integrated_seurat, features = i, min.cutoff = 'q2', max.cutoff = 'q99', label = TRUE, raster = FALSE))
+}
+
+```
+
 
 
 Astrocyte markers
@@ -1118,7 +1141,7 @@ for (i in astrocytes) {
 
 ```
 
-The astrocyte markers are not very specific.
+
 
 
 
@@ -1216,20 +1239,23 @@ integrated_seurat <- AddMetaData(integrated_seurat, meta_to_add)
 ```
 
 
-Predict with another references dataset
+Predict with another references data set
 
 ```{r}
 
-ref.ka <- readRDS(paste(file_path,"KamathTotal_downsample.RDS", sep = "/"))
-colnames(ref.ka@meta.data)
-Idents(ref.ka) <- "Cell_Type"
+ref.da <- readRDS(paste(file_path,"manno_human.rds", sep = "/"))
+colnames(ref.da@meta.data)
+unique(ref.da$cell_type1)
+unique(ref.da$Celltypes)
+
+Idents(ref.da) <- "Celltypes"
 
 # make the refrence object into a dgCMat_ref class
-dgCMat_ref.ka <- GetAssayData(ref.ka)
+dgCMat_ref.da <- GetAssayData(ref.da)
 # get the cell type data
-Idents(ref.ka) <- "Cell_Type"
-ref_celltypes.ka <- Idents(ref.ka)
-unique(ref_celltypes.ka)
+Idents(ref.da) <- "Celltypes"
+ref_celltypes.da <- Idents(ref.da)
+unique(ref_celltypes.da)
 
 ```
 
@@ -1241,8 +1267,8 @@ Idents(integrated_seurat) <- "RNA_snn_res.0.4"
 query_clusters <- Idents(integrated_seurat)
 
 
-scClassify_res.ka <- scClassify(exprsMat_train = dgCMat_ref.ka,
-                             cellTypes_train = ref_celltypes.ka,
+scClassify_res.da <- scClassify(exprsMat_train = dgCMat_ref.da,
+                             cellTypes_train = ref_celltypes.da,
                              exprsMat_test = dgCMat_query,
                              cellTypes_test = query_clusters,
                              tree = "HOPACH",
@@ -1259,8 +1285,8 @@ scClassify_res.ka <- scClassify(exprsMat_train = dgCMat_ref.ka,
 See the tree in the midbrain reference data
 
 ```{r}
-scClassify_res.ka$trainRes
-plotCellTypeTree(cellTypeTree(scClassify_res.ka$trainRes))
+scClassify_res.da$trainRes
+plotCellTypeTree(cellTypeTree(scClassify_res.da$trainRes))
 ```
 
 
@@ -1268,7 +1294,7 @@ plotCellTypeTree(cellTypeTree(scClassify_res.ka$trainRes))
 See the midbrain predictions
 
 ```{r}
-table(scClassify_res.ka$testRes$test$pearson_WKNN_limma$predRes,query_clusters)
+table(scClassify_res.da$testRes$test$pearson_WKNN_limma$predRes,query_clusters)
 meta_to_add <- scClassify_res.ka$testRes$test$pearson_WKNN_limma$predRes %>% 
                 enframe %>% 
                 as.data.frame %>% 
@@ -1316,11 +1342,35 @@ UMAP_En
 ```
 
 
-
-Visualize the annotation on the UMAP
+Add annotations from the predictions
 
 ```{r}
 
+previous_annotations <- c("imNeurons","Progen-RB", "RG1","RG2","NB-DAN","RG3",
+                          "RG4","IN-DAN","Pericyte-RG")
+integrated_seurat <- add_annotation(integrated_seurat, 
+                                    annotations = previous_annotations, 
+                                    to_label = integrated_seurat$RNA_snn_res.0.4,
+                                    annotation_name = "CelltypesFetalDA")
+
+
+UMAP_F <- DimPlot(integrated_seurat, group.by = "CelltypesFetalDA", label = TRUE)
+UMAP_F
+```
+
+
+
+```{r}
+previous_annotations <- c("imNeurons","DA-NPC", "Astrocytes","RG1","Neurons-DA","RG2",
+                          "DA-NPC2","Neurons-IN","NPC")
+integrated_seurat <- add_annotation(integrated_seurat, 
+                                    annotations = previous_annotations, 
+                                    to_label = integrated_seurat$RNA_snn_res.0.4,
+                                    annotation_name = "CelltypesMarkers")
+
+
+UMAP_E <- DimPlot(integrated_seurat, group.by = "CelltypesMarkers", label = TRUE)
+UMAP_E
 
 
 
